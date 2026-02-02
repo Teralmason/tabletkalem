@@ -17,8 +17,11 @@ jobs:
           if [ ! -d "android" ]; then
             flutter create . --platforms=android --project-name=tabletkalem
           fi
-          # Siyah ekranı silen komut
+          
+          # SİYAH EKRANI DELEN KOMUT (BALYOZ)
+          # Bu satır Android'in kendi ayarlarını "Şeffaf Ol" diye değiştirir.
           sed -i 's/android:theme="@style\/LaunchTheme"/android:theme="@android:style\/Theme.Translucent.NoTitleBar"/' android/app/src/main/AndroidManifest.xml
+          
           flutter pub add system_alert_window
           flutter pub get
         
