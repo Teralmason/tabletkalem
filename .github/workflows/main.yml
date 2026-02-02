@@ -5,15 +5,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Java Kurulumu
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-          
-      - name: Flutter Kurulumu
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
       
@@ -21,10 +17,8 @@ jobs:
           if [ ! -d "android" ]; then
             flutter create . --platforms=android --project-name=tabletkalem
           fi
-          # SİYAH EKRANI SİLEN SİHİRLİ KOMUT:
-          # Bu komut Android'in ana temasını "Translucent" (Şeffaf) yapar.
+          # Siyah ekranı silen komut
           sed -i 's/android:theme="@style\/LaunchTheme"/android:theme="@android:style\/Theme.Translucent.NoTitleBar"/' android/app/src/main/AndroidManifest.xml
-          
           flutter pub add system_alert_window
           flutter pub get
         
