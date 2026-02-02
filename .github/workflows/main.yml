@@ -1,5 +1,7 @@
 name: Flutter APK Build
-on: [push]
+on: 
+  workflow_dispatch: # Manuel çalıştırma modu aktif
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -12,10 +14,20 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+      
       - run: |
+          # Projeyi oluştur
           flutter create . --platforms=android --project-name=tabletkalem
+          
+          # Paketleri ekle
+          flutter pub add system_alert_window screenshot permission_handler
           flutter pub get
-          flutter build apk --release --split-per-abi
+          
+          # Android Manifest'e gerekli izinleri cerrahi müdahale ile ekle
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />' android/app/src/main/AndroidManifest.xml
+
+      - run: flutter build apk --release --split-per-abi
+
       - name: APK Kaydet
         uses: actions/upload-artifact@v4
         with:
