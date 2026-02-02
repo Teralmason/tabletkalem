@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Bu satırı ekledik
 import 'package:system_alert_window/system_alert_window.dart';
 
-void main() => runApp(const MaterialApp(
-      home: FatihKalem(),
-      debugShowCheckedModeBanner: false,
-    ));
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Android sistem çubuğunu şeffaf yapmaya zorlar
+  SystemChrome.setSystemUIOverlayStyle(const SystemUIOverlayStyle(
+    statusBarColor: Colors.transparent,
+    systemNavigationBarColor: Colors.transparent,
+  ));
+  runApp(const MaterialApp(
+    home: FatihKalem(),
+    debugShowCheckedModeBanner: false,
+  ));
+}
+
+// ... Geri kalan kodlar aynı kalacak, sadece main kısmını değiştirdik ...
 
 class FatihKalem extends StatefulWidget {
   const FatihKalem({super.key});
