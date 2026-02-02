@@ -4,10 +4,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4 # v4'e güncellendi
+      - uses: actions/checkout@v4
       
       - name: Java Kurulumu
-        uses: actions/setup-java@v4 # v4'e güncellendi
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -17,20 +17,18 @@ jobs:
         with:
           channel: 'stable'
       
-      # Android klasörünü ve temel yapılandırmayı oluşturur
-      # Sadece android klasörü yoksa oluştur, ama var olan pubspec.yaml'a dokunma
       - run: |
           if [ ! -d "android" ]; then
-            flutter create . --platforms=android
+            flutter create . --platforms=android --project-name=tabletkalem
           fi
-
-      - run: flutter pub get
-      
-      # APK derleme (Tüm işlem burada biter)
+          # PAKETİ BURADA MANUEL OLARAK ZORLA EKLETİYORUZ
+          flutter pub add system_alert_window
+          flutter pub get
+        
       - run: flutter build apk --release --split-per-abi
-      
+
       - name: APK'yı Kaydet
-        uses: actions/upload-artifact@v4 # İŞTE KRİTİK GÜNCELLEME BURASI
+        uses: actions/upload-artifact@v4
         with:
           name: TabletKalem-APK
-          path: build/app/outputs/flutter-apk/app-release-arm64-v8a.apk
+          path: build/app/outputs/flutter-apk/*.apk
