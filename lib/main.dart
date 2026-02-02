@@ -33,19 +33,15 @@ class _GirisEkraniState extends State<GirisEkrani> {
   }
 
   void _baloncuguGoster() {
-    // 2.0.7 sürümünde Header ve parametre yapısı bu şekildedir
-    SystemWindowHeader header = SystemWindowHeader(
-      title: SystemWindowText(text: "KALEM", fontSize: 14, textColor: Colors.white),
-      decoration: SystemWindowDecoration(startColor: Colors.blueAccent),
-    );
-
+    // 2.0.7 sürümünde 'showSystemWindow' parametreleri tamamen değişti.
+    // Artık 'header', 'body', 'footer' gibi sınıflar kullanılmıyor. 
+    // Sadece temel ayarlar gönderiliyor.
     SystemAlertWindow.showSystemWindow(
-      height: 70,
-      width: 70,
-      header: header,
-      margin: SystemWindowMargin(left: 0, top: 0, right: 0, bottom: 0),
+      height: 200,
+      width: 200,
       gravity: SystemWindowGravity.CENTER,
       prefMode: SystemWindowPrefMode.OVERLAY,
+      isCollapsible: true,
     );
   }
 
@@ -62,7 +58,7 @@ class _GirisEkraniState extends State<GirisEkrani> {
               const Icon(Icons.draw, size: 80, color: Colors.blue),
               const SizedBox(height: 20),
               ElevatedButton.icon(
-                icon: const Icon(Icons.ondemand_video), // Boşluk silindi
+                icon: const Icon(Icons.play_arrow),
                 label: const Text("Yüzen Baloncuğu Aç"),
                 onPressed: _baloncuguGoster,
               ),
