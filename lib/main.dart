@@ -1,21 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Bu satırı ekledik
 import 'package:system_alert_window/system_alert_window.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  // Android sistem çubuğunu şeffaf yapmaya zorlar
-  SystemChrome.setSystemUIOverlayStyle(const SystemUIOverlayStyle(
-    statusBarColor: Colors.transparent,
-    systemNavigationBarColor: Colors.transparent,
-  ));
   runApp(const MaterialApp(
     home: FatihKalem(),
     debugShowCheckedModeBanner: false,
   ));
 }
-
-// ... Geri kalan kodlar aynı kalacak, sadece main kısmını değiştirdik ...
 
 class FatihKalem extends StatefulWidget {
   const FatihKalem({super.key});
@@ -41,12 +33,7 @@ class _FatihKalemState extends State<FatihKalem> {
   @override
   void initState() {
     super.initState();
-    _checkPermission(); // Uygulama açılınca izni kontrol et
-  }
-
-  // Overlay izni isteyen sihirli fonksiyon
-  Future<void> _checkPermission() async {
-    await SystemAlertWindow.requestPermissions;
+    SystemAlertWindow.requestPermissions; // İzni burada istiyoruz
   }
 
   bool get isActive => selectedColor != null || isEraserMode;
@@ -54,7 +41,6 @@ class _FatihKalemState extends State<FatihKalem> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Arka planı tamamen cam gibi yapıyoruz
       backgroundColor: Colors.transparent, 
       body: Stack(
         children: [
@@ -128,28 +114,23 @@ class _FatihKalemState extends State<FatihKalem> {
               child: Icon(isEraserMode ? Icons.auto_fix_high : (selectedColor != null ? Icons.create : Icons.mouse), color: Colors.white, size: 24),
             ),
           ),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            margin: const EdgeInsets.only(top: 6),
-            height: isMenuOpen ? 360 : 0, width: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFF2C2C2C).withOpacity(0.98),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: Colors.white10),
-            ),
-            child: isMenuOpen ? SingleChildScrollView(
-              physics: const NeverScrollableScrollPhysics(),
+          if (isMenuOpen)
+            Container(
+              margin: const EdgeInsets.only(top: 6),
+              width: 44,
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C2C2C).withOpacity(0.9),
+                borderRadius: BorderRadius.circular(22),
+              ),
               child: Column(
                 children: [
-                  const SizedBox(height: 10),
                   _colorOption(const Color(0xFFB71C1C)), 
                   _colorOption(const Color(0xFF0D47A1)), 
                   _colorOption(Colors.black),
-                  const Divider(color: Colors.white10, height: 16),
+                  const Divider(color: Colors.white24),
                   _widthOption(2.0, "İ"),
-                  _widthOption(6.0, "O"),
                   _widthOption(12.0, "K"),
-                  const Divider(color: Colors.white10, height: 16),
+                  const Divider(color: Colors.white24),
                   _actionOption(Icons.auto_fix_high, () {
                     setState(() {
                       isEraserMode = !isEraserMode;
@@ -160,40 +141,32 @@ class _FatihKalemState extends State<FatihKalem> {
                   const SizedBox(height: 10),
                 ],
               ),
-            ) : null,
-          ),
+            ),
         ],
       ),
     );
   }
 
   Widget _colorOption(Color color) {
-    bool isSelected = selectedColor == color;
     return GestureDetector(
-      onTap: () => setState(() { isEraserMode = false; selectedColor = isSelected ? null : color; }),
+      onTap: () => setState(() { isEraserMode = false; selectedColor = color; }),
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 5),
-        width: 28, height: 28,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: isSelected ? Colors.white : Colors.white24, width: isSelected ? 2.5 : 1)),
+        width: 25, height: 25,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: Colors.white)),
       ),
     );
   }
 
   Widget _widthOption(double width, String label) {
-    bool isSelected = selectedWidth == width;
     return GestureDetector(
       onTap: () => setState(() => selectedWidth = width),
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 5),
-        width: 30, height: 30,
-        decoration: BoxDecoration(color: isSelected ? Colors.white : Colors.grey[800], shape: BoxShape.circle),
-        child: Center(child: Text(label, style: TextStyle(color: isSelected ? Colors.black : Colors.white, fontSize: 10))),
-      ),
+      child: CircleAvatar(radius: 15, backgroundColor: Colors.white24, child: Text(label, style: const TextStyle(fontSize: 10, color: Colors.white))),
     );
   }
 
   Widget _actionOption(IconData icon, VoidCallback tap, Color bgColor) {
-    return GestureDetector(onTap: tap, child: Container(margin: const EdgeInsets.symmetric(vertical: 5), width: 32, height: 32, decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle), child: Icon(icon, color: Colors.white, size: 16)));
+    return GestureDetector(onTap: tap, child: CircleAvatar(radius: 16, backgroundColor: bgColor, child: Icon(icon, color: Colors.white, size: 16)));
   }
 }
 
