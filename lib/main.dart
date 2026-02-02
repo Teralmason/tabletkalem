@@ -6,7 +6,10 @@ import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MaterialApp(home: GirisEkrani(), debugShowCheckedModeBanner: false));
+  runApp(const MaterialApp(
+    home: GirisEkrani(),
+    debugShowCheckedModeBanner: false,
+  ));
 }
 
 class GirisEkrani extends StatefulWidget {
@@ -16,16 +19,18 @@ class GirisEkrani extends StatefulWidget {
 }
 
 class _GirisEkraniState extends State<GirisEkrani> {
+  final ScreenshotController screenshotController = ScreenshotController();
+
   @override
   void initState() {
     super.initState();
-    _baslat();
+    _izinleriAl();
   }
 
-  Future<void> _baslat() async {
-    await [Permission.storage, Permission.manageExternalStorage].request();
+  Future<void> _izinleriAl() async {
+    // Depolama ve Overlay izinlerini iste
+    await [Permission.storage, Permission.photos].request();
     await SystemAlertWindow.requestPermissions;
-    _baloncuguGoster();
   }
 
   void _baloncuguGoster() {
@@ -41,28 +46,48 @@ class _GirisEkraniState extends State<GirisEkrani> {
       gravity: SystemWindowGravity.CENTER,
       prefMode: SystemWindowPrefMode.OVERLAY,
     );
-    
-    // Uygulamayı simge durumuna küçült (User PDF'e dönsün)
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: Main Strategy.center,
-          children: [
-            const Text("Kalem Baloncuğu Aktif!"),
-            const SizedBox(height: 20),
-            ElevatedButton(onPressed: () => _baloncuguGoster(), child: const Text("Baloncuğu Tekrar Aç")),
-          ],
+    return Screenshot(
+      controller: screenshotController,
+      child: Scaffold(
+        appBar: AppBar(title: const Text("Tablet Kalem V2")),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.draw, size: 80, color: Colors.blue),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                icon: const Icon(Icons. Ondemand_video),
+                label: const Text("Yüzen Baloncuğu Aç"),
+                onPressed: _baloncuguGoster,
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.camera_alt),
+                label: const Text("Ekranı Yakala ve Çiz"),
+                onPressed: () async {
+                  // Bu buton normalde baloncuktan tetiklenecek ama test için burada
+                  final image = await screenshotController.capture();
+                  if (image != null && mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => CizimEkrani(imageBytes: image)),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ASIL ÇİZİM EKRANI (Ekran görüntüsü alındığında burası açılır)
 class CizimEkrani extends StatefulWidget {
   final Uint8List imageBytes;
   const CizimEkrani({super.key, required this.imageBytes});
@@ -89,30 +114,56 @@ class _CizimEkraniState extends State<CizimEkrani> {
     return Scaffold(
       body: Stack(
         children: [
-          // Alttaki Ekran Görüntüsü
-          Image.memory(widget.imageBytes, width: double.infinity, height: double.infinity, fit: BoxFit.fill),
+          // Arka plan: Yakalanan ekran görüntüsü
+          Image.memory(
+            widget.imageBytes,
+            width: double.infinity,
+            height: double.infinity,
+            fit: BoxFit.fill,
+          ),
           
-          // Çizim Katmanı
+          // Çizim katmanı
           GestureDetector(
-            onPanStart: (d) => setState(() => strokes.add(Stroke(points: [d.localPosition], color: isEraser ? Colors.transparent : selectedColor, width: selectedWidth))),
-            onPanUpdate: (d) => setState(() => strokes.last.points.add(d.localPosition)),
-            child: CustomPaint(painter: CizimRessami(strokes), size: Size.infinite),
+            onPanStart: (details) {
+              setState(() {
+                strokes.add(Stroke(
+                  points: [details.localPosition],
+                  color: isEraser ? Colors.white : selectedColor,
+                  width: selectedWidth,
+                ));
+              });
+            },
+            onPanUpdate: (details) {
+              setState(() {
+                strokes.last.points.add(details.localPosition);
+              });
+            },
+            child: CustomPaint(
+              painter: CizimRessami(strokes),
+              size: Size.infinite,
+            ),
           ),
 
-          // Toolbar
+          // Araç Çubuğu
           Positioned(
-            top: 40, left: 20,
+            top: 40,
+            left: 20,
+            right: 20,
             child: Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(30)),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(30),
+              ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _btn(Icons.edit, Colors.blue, () => setState(() => isEraser = false)),
-                  _btn(Icons.auto_fix_high, Colors.purple, () => setState(() => isEraser = true)),
-                  _btn(Icons.palette, Colors.red, () => setState(() => selectedColor = Colors.red)),
-                  _btn(Icons.palette, Colors.green, () => setState(() => selectedColor = Colors.green)),
-                  _btn(Icons.delete, Colors.grey, () => setState(() => strokes.clear())),
-                  _btn(Icons.close, Colors.redAccent, () => Navigator.pop(context)),
+                  _actionBtn(Icons.edit, Colors.blue, () => setState(() => isEraser = false)),
+                  _actionBtn(Icons.auto_fix_high, Colors.purple, () => setState(() => isEraser = true)),
+                  _actionBtn(Icons.circle, Colors.red, () => setState(() => selectedColor = Colors.red)),
+                  _actionBtn(Icons.circle, Colors.green, () => setState(() => selectedColor = Colors.green)),
+                  _actionBtn(Icons.delete, Colors.white, () => setState(() => strokes.clear())),
+                  _actionBtn(Icons.close, Colors.redAccent, () => Navigator.pop(context)),
                 ],
               ),
             ),
@@ -122,26 +173,35 @@ class _CizimEkraniState extends State<CizimEkrani> {
     );
   }
 
-  Widget _btn(IconData icon, Color color, VoidCallback tap) => IconButton(icon: Icon(icon, color: color), onPressed: tap);
+  Widget _actionBtn(IconData icon, Color color, VoidCallback tap) {
+    return IconButton(icon: Icon(icon, color: color), onPressed: tap);
+  }
 }
 
 class CizimRessami extends CustomPainter {
   final List<Stroke> strokes;
   CizimRessami(this.strokes);
+
   @override
   void paint(Canvas canvas, Size size) {
     for (var stroke in strokes) {
-      Paint paint = Paint()..color = stroke.color..strokeCap = StrokeCap.round..strokeWidth = stroke.width..style = PaintingStyle.stroke;
-      if (stroke.color == Colors.transparent) paint.blendMode = BlendMode.clear;
-      
+      Paint paint = Paint()
+        ..color = stroke.color
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = stroke.width
+        ..style = PaintingStyle.stroke;
+
       Path path = Path();
       if (stroke.points.isNotEmpty) {
         path.moveTo(stroke.points[0].dx, stroke.points[0].dy);
-        for (var p in stroke.points) path.lineTo(p.dx, p.dy);
+        for (var p in stroke.points) {
+          path.lineTo(p.dx, p.dy);
+        }
       }
       canvas.drawPath(path, paint);
     }
   }
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
