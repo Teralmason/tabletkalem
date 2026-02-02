@@ -21,7 +21,10 @@ jobs:
           if [ ! -d "android" ]; then
             flutter create . --platforms=android --project-name=tabletkalem
           fi
-          # PAKETİ BURADA MANUEL OLARAK ZORLA EKLETİYORUZ
+          # SİYAH EKRANI SİLEN SİHİRLİ KOMUT:
+          # Bu komut Android'in ana temasını "Translucent" (Şeffaf) yapar.
+          sed -i 's/android:theme="@style\/LaunchTheme"/android:theme="@android:style\/Theme.Translucent.NoTitleBar"/' android/app/src/main/AndroidManifest.xml
+          
           flutter pub add system_alert_window
           flutter pub get
         
