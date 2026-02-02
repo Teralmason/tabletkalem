@@ -1,6 +1,6 @@
 name: Flutter APK Build
 on: 
-  workflow_dispatch: # Manuel çalıştırma modu aktif
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,15 +16,12 @@ jobs:
           channel: 'stable'
       
       - run: |
-          # Projeyi oluştur
           flutter create . --platforms=android --project-name=tabletkalem
-          
-          # Paketleri ekle
-          flutter pub add system_alert_window screenshot permission_handler
+          # Sadece bu iki paketi ekliyoruz, sorunlu olan overlay paketini sildik
+          flutter pub add screenshot permission_handler
           flutter pub get
-          
-          # Android Manifest'e gerekli izinleri cerrahi müdahale ile ekle
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />' android/app/src/main/AndroidManifest.xml
+          # İzinleri ekle
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />' android/app/src/main/AndroidManifest.xml
 
       - run: flutter build apk --release --split-per-abi
 
