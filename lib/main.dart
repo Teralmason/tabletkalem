@@ -33,15 +33,28 @@ class _GirisEkraniState extends State<GirisEkrani> {
   }
 
   void _baloncuguGoster() {
-    // 2.0.7 sürümünde 'showSystemWindow' parametreleri tamamen değişti.
-    // Artık 'header', 'body', 'footer' gibi sınıflar kullanılmıyor. 
-    // Sadece temel ayarlar gönderiliyor.
+    // Paket bu alt nesnelerin tanımlanmasını zorunlu kılıyor.
+    // Hata almamak için her birini en sade haliyle oluşturuyoruz.
+    SystemWindowHeader header = SystemWindowHeader(
+      title: SystemWindowText(text: "Kalem", fontSize: 14, textColor: Colors.black),
+      decoration: SystemWindowDecoration(startColor: Colors.white),
+    );
+
+    SystemWindowBody body = SystemWindowBody(
+      rows: [
+        EachRow(columns: [
+          EachColumn(text: SystemWindowText(text: "Çizmek için tıklayın", fontSize: 12, textColor: Colors.black45))
+        ])
+      ],
+    );
+
     SystemAlertWindow.showSystemWindow(
-      height: 200,
-      width: 200,
+      height: 100,
+      width: 100,
+      header: header,
+      body: body,
       gravity: SystemWindowGravity.CENTER,
       prefMode: SystemWindowPrefMode.OVERLAY,
-      isCollapsible: true,
     );
   }
 
@@ -55,11 +68,11 @@ class _GirisEkraniState extends State<GirisEkrani> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.draw, size: 80, color: Colors.blue),
+              const Icon(Icons.gesture, size: 80, color: Colors.blue),
               const SizedBox(height: 20),
               ElevatedButton.icon(
-                icon: const Icon(Icons.play_arrow),
-                label: const Text("Yüzen Baloncuğu Aç"),
+                icon: const Icon(Icons.open_in_new),
+                label: const Text("Baloncuğu Başlat"),
                 onPressed: _baloncuguGoster,
               ),
               const SizedBox(height: 10),
@@ -101,7 +114,6 @@ class Stroke {
 class _CizimEkraniState extends State<CizimEkrani> {
   List<Stroke> strokes = [];
   Color selectedColor = Colors.red;
-  double selectedWidth = 4.0;
   bool isEraser = false;
 
   @override
@@ -111,29 +123,15 @@ class _CizimEkraniState extends State<CizimEkrani> {
         children: [
           Image.memory(widget.imageBytes, width: double.infinity, height: double.infinity, fit: BoxFit.fill),
           GestureDetector(
-            onPanStart: (details) {
-              setState(() {
-                strokes.add(Stroke(
-                  points: [details.localPosition],
-                  color: isEraser ? Colors.white : selectedColor,
-                  width: selectedWidth,
-                ));
-              });
-            },
-            onPanUpdate: (details) {
-              setState(() {
-                strokes.last.points.add(details.localPosition);
-              });
-            },
+            onPanStart: (d) => setState(() => strokes.add(Stroke(points: [d.localPosition], color: isEraser ? Colors.white : selectedColor, width: 4.0))),
+            onPanUpdate: (d) => setState(() => strokes.last.points.add(d.localPosition)),
             child: CustomPaint(painter: CizimRessami(strokes), size: Size.infinite),
           ),
           Positioned(
-            top: 40,
-            left: 20,
-            right: 20,
+            top: 40, left: 20, right: 20,
             child: Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: Colors.black.withOpacity(0.8), borderRadius: BorderRadius.circular(30)),
+              decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(30)),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
