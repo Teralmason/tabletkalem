@@ -5,23 +5,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      
+      - name: Java Kurulumu
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-      - uses: subosito/flutter-action@v2
+          
+      - name: Flutter Kurulumu
+        uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
       
       - run: |
+          # 1. Projeyi oluştur
           if [ ! -d "android" ]; then
             flutter create . --platforms=android --project-name=tabletkalem
           fi
           
-          # SİYAH EKRANI DELEN KOMUT (BALYOZ)
-          # Bu satır Android'in kendi ayarlarını "Şeffaf Ol" diye değiştirir.
+          # 2. SİYAH EKRANI YOK EDEN KOMUT (Balyoz)
+          # Manifest dosyasını bulup LaunchTheme yerine Translucent tema yazıyoruz.
           sed -i 's/android:theme="@style\/LaunchTheme"/android:theme="@android:style\/Theme.Translucent.NoTitleBar"/' android/app/src/main/AndroidManifest.xml
           
+          # 3. Eğer NormalTheme varsa onu da sil (Çifte kontrol)
+          sed -i '/<meta-data android:name="io.flutter.embedding.android.NormalTheme"/d' android/app/src/main/AndroidManifest.xml
+
+          # 4. Paketi ekle ve indir
           flutter pub add system_alert_window
           flutter pub get
         
