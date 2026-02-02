@@ -28,12 +28,12 @@ class _GirisEkraniState extends State<GirisEkrani> {
   }
 
   Future<void> _izinleriAl() async {
-    // Depolama ve Overlay izinlerini iste
-    await [Permission.storage, Permission.photos].request();
-    await SystemAlertWindow.requestPermissions;
+    await [Permission.storage, Permission.photos, Permission.manageExternalStorage].request();
+    await SystemAlertWindow.requestPermissions();
   }
 
   void _baloncuguGoster() {
+    // 2.0.7 sürümünde Header ve parametre yapısı bu şekildedir
     SystemWindowHeader header = SystemWindowHeader(
       title: SystemWindowText(text: "KALEM", fontSize: 14, textColor: Colors.white),
       decoration: SystemWindowDecoration(startColor: Colors.blueAccent),
@@ -43,6 +43,7 @@ class _GirisEkraniState extends State<GirisEkrani> {
       height: 70,
       width: 70,
       header: header,
+      margin: SystemWindowMargin(left: 0, top: 0, right: 0, bottom: 0),
       gravity: SystemWindowGravity.CENTER,
       prefMode: SystemWindowPrefMode.OVERLAY,
     );
@@ -61,7 +62,7 @@ class _GirisEkraniState extends State<GirisEkrani> {
               const Icon(Icons.draw, size: 80, color: Colors.blue),
               const SizedBox(height: 20),
               ElevatedButton.icon(
-                icon: const Icon(Icons. Ondemand_video),
+                icon: const Icon(Icons.ondemand_video), // Boşluk silindi
                 label: const Text("Yüzen Baloncuğu Aç"),
                 onPressed: _baloncuguGoster,
               ),
@@ -70,7 +71,6 @@ class _GirisEkraniState extends State<GirisEkrani> {
                 icon: const Icon(Icons.camera_alt),
                 label: const Text("Ekranı Yakala ve Çiz"),
                 onPressed: () async {
-                  // Bu buton normalde baloncuktan tetiklenecek ama test için burada
                   final image = await screenshotController.capture();
                   if (image != null && mounted) {
                     Navigator.push(
@@ -91,7 +91,6 @@ class _GirisEkraniState extends State<GirisEkrani> {
 class CizimEkrani extends StatefulWidget {
   final Uint8List imageBytes;
   const CizimEkrani({super.key, required this.imageBytes});
-
   @override
   State<CizimEkrani> createState() => _CizimEkraniState();
 }
@@ -114,15 +113,7 @@ class _CizimEkraniState extends State<CizimEkrani> {
     return Scaffold(
       body: Stack(
         children: [
-          // Arka plan: Yakalanan ekran görüntüsü
-          Image.memory(
-            widget.imageBytes,
-            width: double.infinity,
-            height: double.infinity,
-            fit: BoxFit.fill,
-          ),
-          
-          // Çizim katmanı
+          Image.memory(widget.imageBytes, width: double.infinity, height: double.infinity, fit: BoxFit.fill),
           GestureDetector(
             onPanStart: (details) {
               setState(() {
@@ -138,32 +129,23 @@ class _CizimEkraniState extends State<CizimEkrani> {
                 strokes.last.points.add(details.localPosition);
               });
             },
-            child: CustomPaint(
-              painter: CizimRessami(strokes),
-              size: Size.infinite,
-            ),
+            child: CustomPaint(painter: CizimRessami(strokes), size: Size.infinite),
           ),
-
-          // Araç Çubuğu
           Positioned(
             top: 40,
             left: 20,
             right: 20,
             child: Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.8),
-                borderRadius: BorderRadius.circular(30),
-              ),
+              decoration: BoxDecoration(color: Colors.black.withOpacity(0.8), borderRadius: BorderRadius.circular(30)),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _actionBtn(Icons.edit, Colors.blue, () => setState(() => isEraser = false)),
-                  _actionBtn(Icons.auto_fix_high, Colors.purple, () => setState(() => isEraser = true)),
-                  _actionBtn(Icons.circle, Colors.red, () => setState(() => selectedColor = Colors.red)),
-                  _actionBtn(Icons.circle, Colors.green, () => setState(() => selectedColor = Colors.green)),
-                  _actionBtn(Icons.delete, Colors.white, () => setState(() => strokes.clear())),
-                  _actionBtn(Icons.close, Colors.redAccent, () => Navigator.pop(context)),
+                  IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => setState(() => isEraser = false)),
+                  IconButton(icon: const Icon(Icons.auto_fix_high, color: Colors.purple), onPressed: () => setState(() => isEraser = true)),
+                  IconButton(icon: const Icon(Icons.circle, color: Colors.red), onPressed: () => setState(() => selectedColor = Colors.red)),
+                  IconButton(icon: const Icon(Icons.delete, color: Colors.white), onPressed: () => setState(() => strokes.clear())),
+                  IconButton(icon: const Icon(Icons.close, color: Colors.redAccent), onPressed: () => Navigator.pop(context)),
                 ],
               ),
             ),
@@ -172,36 +154,23 @@ class _CizimEkraniState extends State<CizimEkrani> {
       ),
     );
   }
-
-  Widget _actionBtn(IconData icon, Color color, VoidCallback tap) {
-    return IconButton(icon: Icon(icon, color: color), onPressed: tap);
-  }
 }
 
 class CizimRessami extends CustomPainter {
   final List<Stroke> strokes;
   CizimRessami(this.strokes);
-
   @override
   void paint(Canvas canvas, Size size) {
     for (var stroke in strokes) {
-      Paint paint = Paint()
-        ..color = stroke.color
-        ..strokeCap = StrokeCap.round
-        ..strokeWidth = stroke.width
-        ..style = PaintingStyle.stroke;
-
+      Paint paint = Paint()..color = stroke.color..strokeCap = StrokeCap.round..strokeWidth = stroke.width..style = PaintingStyle.stroke;
       Path path = Path();
       if (stroke.points.isNotEmpty) {
         path.moveTo(stroke.points[0].dx, stroke.points[0].dy);
-        for (var p in stroke.points) {
-          path.lineTo(p.dx, p.dy);
-        }
+        for (var p in stroke.points) path.lineTo(p.dx, p.dy);
       }
       canvas.drawPath(path, paint);
     }
   }
-
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
