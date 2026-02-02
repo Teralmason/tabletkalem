@@ -18,9 +18,10 @@ jobs:
           channel: 'stable'
       
       # Android klasörünü ve temel yapılandırmayı oluşturur
+      # Sadece android klasörü yoksa oluştur, ama var olan pubspec.yaml'a dokunma
       - run: |
           if [ ! -d "android" ]; then
-            flutter create . --platforms=android --project-name=tabletkalem
+            flutter create . --platforms=android
           fi
 
       - run: flutter pub get
