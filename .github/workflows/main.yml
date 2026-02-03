@@ -51,7 +51,7 @@ jobs:
             uses-material-design: true
           EOF
 
-      # 2.5️⃣ MainActivity.kt'yi geri yaz (ÇOK KRİTİK)
+      # 2.5️⃣ MainActivity.kt'yi geri yaz
       - name: Restore MainActivity
         run: |
           mkdir -p android/app/src/main/kotlin/com/example/tabletkalem
@@ -146,7 +146,7 @@ jobs:
           }
           EOF
 
-      # 🔥 2.6️⃣ AndroidManifest.xml'yi geri yaz (V1 EMBEDDING HATASINI KESİN ÇÖZER)
+      # 2.6️⃣ AndroidManifest.xml'yi geri yaz (V2 EMBEDDING - DOĞRU YER)
       - name: Restore AndroidManifest
         run: |
           cat > android/app/src/main/AndroidManifest.xml << 'EOF'
@@ -157,19 +157,18 @@ jobs:
                   android:label="tabletkalem"
                   android:icon="@mipmap/ic_launcher">
 
+                  <!-- 🔴 Flutter v2 embedding bildirimi (DOĞRU YER) -->
+                  <meta-data
+                      android:name="flutterEmbedding"
+                      android:value="2" />
+
                   <activity
                       android:name=".MainActivity"
                       android:exported="true"
                       android:launchMode="singleTop"
-                      android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar"
                       android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
                       android:hardwareAccelerated="true"
                       android:windowSoftInputMode="adjustResize">
-
-                      <!-- BU SATIR OLMADAN BUILD OLMAZ -->
-                      <meta-data
-                          android:name="flutterEmbedding"
-                          android:value="2" />
 
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
