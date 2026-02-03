@@ -1,31 +1,27 @@
 name: Flutter APK Build
-on: 
-  workflow_dispatch:
+on: workflow_dispatch
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+
+      - name: Java Kurulumu
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-      - uses: subosito/flutter-action@v2
+
+      - name: Flutter Kurulumu
+        uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-      
-      - run: |
-          flutter create . --platforms=android --project-name=tabletkalem
-          # Sadece bu iki paketi ekliyoruz, sorunlu olan overlay paketini sildik
-          flutter pub add screenshot permission_handler
-          flutter pub get
-          # İzinleri ekle
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />' android/app/src/main/AndroidManifest.xml
 
+      - run: flutter pub get
       - run: flutter build apk --release --split-per-abi
 
-      - name: APK Kaydet
+      - name: APK'yı Kaydet
         uses: actions/upload-artifact@v4
         with:
           name: TabletKalem-APK
