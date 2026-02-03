@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:system_alert_window/system_alert_window.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
