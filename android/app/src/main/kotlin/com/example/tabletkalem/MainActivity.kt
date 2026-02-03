@@ -5,13 +5,15 @@ import android.content.Intent
 import android.graphics.PixelFormat
 import android.media.ImageReader
 import android.media.projection.MediaProjectionManager
-import android.os.Bundle
-import android.util.DisplayMetrics
+import android.os.Handler
+import android.os.Looper
+import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+
     private val CHANNEL = "screenshot_channel"
     private val REQUEST_CODE = 1001
     private var resultCallback: MethodChannel.Result? = null
@@ -38,13 +40,16 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (requestCode == REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            val metrics = DisplayMetrics()
-            windowManager.defaultDisplay.getMetrics(metrics)
+        if (requestCode == REQUEST_CODE && resultCode == Activity.RESULT_OK && data != null) {
+
+            val wm = getSystemService(WINDOW_SERVICE) as WindowManager
+            val bounds = wm.currentWindowMetrics.bounds
+            val width = bounds.width()
+            val height = bounds.height()
 
             val reader = ImageReader.newInstance(
-                metrics.widthPixels,
-                metrics.heightPixels,
+                width,
+                height,
                 PixelFormat.RGBA_8888,
                 1
             )
@@ -52,29 +57,31 @@ class MainActivity : FlutterActivity() {
             val projectionManager =
                 getSystemService(Activity.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
             val projection =
-                projectionManager.getMediaProjection(resultCode, data!!)
+                projectionManager.getMediaProjection(resultCode, data)
 
             val virtualDisplay = projection.createVirtualDisplay(
                 "screen",
-                metrics.widthPixels,
-                metrics.heightPixels,
-                metrics.densityDpi,
+                width,
+                height,
+                resources.displayMetrics.densityDpi,
                 0,
                 reader.surface,
                 null,
                 null
             )
 
-            reader.setOnImageAvailableListener({
-                val image = it.acquireLatestImage()
+            reader.setOnImageAvailableListener({ ir ->
+                val image = ir.acquireLatestImage() ?: return@setOnImageAvailableListener
                 val buffer = image.planes[0].buffer
                 val bytes = ByteArray(buffer.remaining())
                 buffer.get(bytes)
                 image.close()
+
                 virtualDisplay.release()
                 projection.stop()
+
                 resultCallback?.success(bytes)
-            }, null)
+            }, Handler(Looper.getMainLooper()))
         }
         super.onActivityResult(requestCode, resultCode, data)
     }
