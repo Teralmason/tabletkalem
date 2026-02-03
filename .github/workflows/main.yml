@@ -4,6 +4,7 @@ on: workflow_dispatch
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -18,8 +19,17 @@ jobs:
         with:
           channel: 'stable'
 
-      - run: flutter pub get
-      - run: flutter build apk --release --split-per-abi
+      - name: Flutter Proje Kontrolü
+        run: |
+          if [ ! -d "android" ]; then
+            flutter create . --platforms=android --project-name=tabletkalem
+          fi
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: APK Build
+        run: flutter build apk --release --split-per-abi
 
       - name: APK'yı Kaydet
         uses: actions/upload-artifact@v4
