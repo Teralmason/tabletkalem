@@ -1,10 +1,11 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:system_alert_window/system_alert_window.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await SystemAlertWindow.requestPermissions();
+  SystemAlertWindow.requestPermissions();
   runApp(const MyApp());
 }
 
@@ -12,6 +13,7 @@ const platform = MethodChannel('screenshot_channel');
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
@@ -45,6 +47,7 @@ class _LauncherState extends State<Launcher> {
       onTap: () async {
         final Uint8List? img =
             await platform.invokeMethod('takeScreenshot');
+
         if (img != null && mounted) {
           Navigator.push(
             context,
