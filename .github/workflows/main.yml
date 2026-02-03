@@ -17,14 +17,11 @@ jobs:
         with:
           channel: 'stable'
 
-      # Android + Manifest garanti
-      - name: Ensure Android & Manifest
+      # 🔥 EN KRİTİK ADIM: ANDROID'I SIFIRDAN ÜRET
+      - name: Create fresh Android project
         run: |
-          if [ ! -d "android" ]; then
-            flutter create . --platforms=android
-          fi
-
-          sed -i '/<manifest/a\<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>' android/app/src/main/AndroidManifest.xml || true
+          rm -rf android
+          flutter create . --platforms=android
 
       - name: Flutter Pub Get
         run: flutter pub get
