@@ -17,15 +17,20 @@ jobs:
         with:
           channel: 'stable'
 
-      # 🔥 EN KRİTİK ADIM: ANDROID'I SIFIRDAN ÜRET
-      - name: Create fresh Android project
+      # 1️⃣ Android'i GEÇİCİ projede üret
+      - name: Create Android in temp project
         run: |
+          rm -rf __temp_app__
+          flutter create __temp_app__ --platforms=android
           rm -rf android
-          flutter create . --platforms=android
+          mv __temp_app__/android android
+          rm -rf __temp_app__
 
+      # 2️⃣ Paketleri çek (SENİN pubspec.yaml KULLANILIR)
       - name: Flutter Pub Get
         run: flutter pub get
 
+      # 3️⃣ APK BUILD
       - name: Build APK
         run: flutter build apk --release --split-per-abi
 
