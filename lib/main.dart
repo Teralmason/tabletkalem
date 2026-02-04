@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:typed_data';
 
 // Ana uygulama entry point
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  if (!await FlutterOverlayWindow.isPermissionGranted()) {
-    await FlutterOverlayWindow.requestPermission();
-  }
-  
   runApp(const MyApp());
 }
 
@@ -26,74 +22,331 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class Home extends StatelessWidget {
+class Home extends StatefulWidget {
   const Home({super.key});
+
+  @override
+  State<Home> createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
+  String _debugLog = '';
+  bool _isOverlayActive = false;
+
+  void _addLog(String message) {
+    setState(() {
+      _debugLog = '${DateTime.now().toString().substring(11, 19)} - $message\n$_debugLog';
+    });
+    debugPrint('🔵 $message');
+  }
+
+  Future<void> _checkPermissions() async {
+    _addLog('İzinler kontrol ediliyor...');
+    
+    // Bildirim izni kontrol
+    final notificationStatus = await Permission.notification.status;
+    _addLog('Bildirim izni: ${notificationStatus.isGranted ? "✅ Var" : "❌ Yok"}');
+    
+    // Overlay izni kontrol
+    final overlayGranted = await FlutterOverlayWindow.isPermissionGranted();
+    _addLog('Overlay izni: ${overlayGranted ? "✅ Var" : "❌ Yok"}');
+    
+    // Overlay aktif mi kontrol
+    final overlayActive = await FlutterOverlayWindow.isActive();
+    _addLog('Overlay aktif mi: ${overlayActive ? "✅ Evet" : "❌ Hayır"}');
+    
+    setState(() {
+      _isOverlayActive = overlayActive;
+    });
+  }
+
+  Future<void> _requestAllPermissions() async {
+    _addLog('Tüm izinler isteniyor...');
+    
+    // 1. Bildirim izni
+    if (!await Permission.notification.isGranted) {
+      _addLog('Bildirim izni isteniyor...');
+      final result = await Permission.notification.request();
+      _addLog('Bildirim izni sonucu: ${result.isGranted ? "✅ Verildi" : "❌ Reddedildi"}');
+    }
+    
+    // 2. Overlay izni
+    if (!await FlutterOverlayWindow.isPermissionGranted()) {
+      _addLog('Overlay izni isteniyor...');
+      final result = await FlutterOverlayWindow.requestPermission();
+      _addLog('Overlay izni sonucu: ${result ? "✅ Verildi" : "❌ Reddedildi"}');
+    }
+    
+    await _checkPermissions();
+  }
+
+  Future<void> _startOverlay() async {
+    _addLog('=== BALONCUK BAŞLATMA BAŞLADI ===');
+    
+    try {
+      // İzinleri kontrol et
+      final hasOverlayPermission = await FlutterOverlayWindow.isPermissionGranted();
+      _addLog('Overlay izni var mı: ${hasOverlayPermission ? "✅" : "❌"}');
+      
+      if (!hasOverlayPermission) {
+        _addLog('⚠️ Overlay izni yok! İsteniyor...');
+        final granted = await FlutterOverlayWindow.requestPermission();
+        
+        if (!granted) {
+          _addLog('❌ Overlay izni reddedildi!');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Overlay izni gerekli! Lütfen ayarlardan verin.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+        _addLog('✅ Overlay izni verildi!');
+      }
+      
+      // Overlay zaten aktif mi kontrol et
+      final isActive = await FlutterOverlayWindow.isActive();
+      _addLog('Overlay şu an aktif mi: ${isActive ? "Evet" : "Hayır"}');
+      
+      if (isActive) {
+        _addLog('⚠️ Overlay zaten aktif!');
+        setState(() {
+          _isOverlayActive = true;
+        });
+        return;
+      }
+      
+      // Overlay'i başlat
+      _addLog('🚀 FlutterOverlayWindow.showOverlay() çağrılıyor...');
+      
+      final result = await FlutterOverlayWindow.showOverlay(
+        enableDrag: true,
+        overlayTitle: "TabletKalem",
+        overlayContent: "Baloncuk",
+        flag: OverlayFlag.defaultFlag,
+        visibility: NotificationVisibility.visibilityPublic,
+        positionGravity: PositionGravity.none,
+        width: 200,
+        height: 200,
+      );
+      
+      _addLog('showOverlay() sonucu: ${result ? "✅ Başarılı" : "❌ Başarısız"}');
+      
+      // Kontrol et
+      await Future.delayed(const Duration(seconds: 1));
+      final nowActive = await FlutterOverlayWindow.isActive();
+      _addLog('1 saniye sonra overlay aktif mi: ${nowActive ? "✅ Evet" : "❌ Hayır"}');
+      
+      setState(() {
+        _isOverlayActive = nowActive;
+      });
+      
+      if (nowActive) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Baloncuk başlatıldı! Ekranın köşesine bakın!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Baloncuk başlatılamadı! Log\'a bakın.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      
+    } catch (e, stackTrace) {
+      _addLog('❌ HATA: $e');
+      _addLog('Stack trace: $stackTrace');
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Hata: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+    
+    _addLog('=== BALONCUK BAŞLATMA BİTTİ ===');
+  }
+
+  Future<void> _closeOverlay() async {
+    _addLog('=== BALONCUK KAPATMA BAŞLADI ===');
+    
+    try {
+      final isActive = await FlutterOverlayWindow.isActive();
+      _addLog('Overlay aktif mi: ${isActive ? "Evet" : "Hayır"}');
+      
+      if (!isActive) {
+        _addLog('⚠️ Overlay zaten kapalı!');
+        setState(() {
+          _isOverlayActive = false;
+        });
+        return;
+      }
+      
+      _addLog('🔴 FlutterOverlayWindow.closeOverlay() çağrılıyor...');
+      await FlutterOverlayWindow.closeOverlay();
+      
+      await Future.delayed(const Duration(milliseconds: 500));
+      final nowActive = await FlutterOverlayWindow.isActive();
+      _addLog('Kapatıldıktan sonra overlay aktif mi: ${nowActive ? "Evet" : "Hayır"}');
+      
+      setState(() {
+        _isOverlayActive = nowActive;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Baloncuk kapatıldı')),
+      );
+      
+    } catch (e) {
+      _addLog('❌ Kapatma hatası: $e');
+    }
+    
+    _addLog('=== BALONCUK KAPATMA BİTTİ ===');
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPermissions();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tablet Kalem'),
+        title: const Text('Tablet Kalem - DEBUG'),
         backgroundColor: Colors.blue,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.create, size: 100, color: Colors.blue),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.bubble_chart),
-              label: const Text("Baloncuğu Başlat"),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-              ),
-              onPressed: () async {
-                if (await FlutterOverlayWindow.isActive()) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Baloncuk zaten aktif!')),
-                  );
-                  return;
-                }
-                
-                await FlutterOverlayWindow.showOverlay(
-                  height: 80,
-                  width: 80,
-                  enableDrag: true,
-                  overlayTitle: "TabletKalem",
-                  overlayContent: "Baloncuk",
-                  flag: OverlayFlag.defaultFlag,
-                  visibility: NotificationVisibility.visibilityPublic,
-                );
-                
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Baloncuk başlatıldı!')),
-                );
-              },
+      body: Column(
+        children: [
+          // Durum paneli
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            color: _isOverlayActive ? Colors.green.shade100 : Colors.red.shade100,
+            child: Column(
+              children: [
+                Icon(
+                  _isOverlayActive ? Icons.check_circle : Icons.cancel,
+                  color: _isOverlayActive ? Colors.green : Colors.red,
+                  size: 48,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _isOverlayActive ? 'BALONCUK AKTİF ✅' : 'BALONCUK KAPALI ❌',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: _isOverlayActive ? Colors.green.shade900 : Colors.red.shade900,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.close),
-              label: const Text("Baloncuğu Kapat"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-              ),
-              onPressed: () async {
-                if (await FlutterOverlayWindow.isActive()) {
-                  await FlutterOverlayWindow.closeOverlay();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Baloncuk kapatıldı!')),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Baloncuk zaten kapalı!')),
-                  );
-                }
-              },
+          ),
+          
+          // Butonlar
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _requestAllPermissions,
+                    icon: const Icon(Icons.security),
+                    label: const Text('İzinleri İste'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(16),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _checkPermissions,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('İzinleri Kontrol Et'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(16),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _startOverlay,
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text('Baloncuğu Başlat'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(16),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _closeOverlay,
+                    icon: const Icon(Icons.stop),
+                    label: const Text('Baloncuğu Kapat'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(16),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          
+          // Debug log
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'DEBUG LOG:',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ),
+          
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: SingleChildScrollView(
+                reverse: true,
+                child: Text(
+                  _debugLog.isEmpty ? 'Log boş...' : _debugLog,
+                  style: const TextStyle(
+                    color: Colors.greenAccent,
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
       ),
     );
   }
@@ -108,260 +361,46 @@ void overlayMain() {
   runApp(
     const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: OverlayBubble(),
+      home: Material(
+        color: Colors.transparent,
+        child: OverlayBubble(),
+      ),
     ),
   );
 }
 
-class OverlayBubble extends StatefulWidget {
+class OverlayBubble extends StatelessWidget {
   const OverlayBubble({super.key});
 
   @override
-  State<OverlayBubble> createState() => _OverlayBubbleState();
-}
-
-class _OverlayBubbleState extends State<OverlayBubble> {
-  bool _isDrawingMode = false;
-  Uint8List? _screenshot;
-  static const platform = MethodChannel('screenshot_channel');
-
-  Future<void> _takeScreenshot() async {
-    try {
-      // Önce overlay'i gizle
-      await FlutterOverlayWindow.closeOverlay();
-      
-      // Biraz bekle ki ekran temiz olsun
-      await Future.delayed(const Duration(milliseconds: 300));
-      
-      // Screenshot al
-      final Uint8List result = await platform.invokeMethod('takeScreenshot');
-      
-      setState(() {
-        _screenshot = result;
-        _isDrawingMode = true;
-      });
-    } catch (e) {
-      debugPrint('Screenshot hatası: $e');
-      // Hata olursa overlay'i geri aç
-      await FlutterOverlayWindow.showOverlay(
-        height: 80,
-        width: 80,
-        enableDrag: true,
-      );
-    }
-  }
-
-  void _closeDrawing() {
-    setState(() {
-      _isDrawingMode = false;
-      _screenshot = null;
-    });
-    
-    // Baloncuğu tekrar aç
-    FlutterOverlayWindow.showOverlay(
-      height: 80,
-      width: 80,
-      enableDrag: true,
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (_isDrawingMode && _screenshot != null) {
-      return DrawingScreen(
-        screenshot: _screenshot!,
-        onClose: _closeDrawing,
-      );
-    }
-
-    return Material(
-      color: Colors.transparent,
+    return Center(
       child: GestureDetector(
-        onTap: _takeScreenshot,
+        onTap: () {
+          debugPrint('🔵 Baloncuğa tıklandı!');
+          FlutterOverlayWindow.closeOverlay();
+        },
         child: Container(
-          width: 80,
-          height: 80,
+          width: 100,
+          height: 100,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: Colors.blue,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 8,
-                spreadRadius: 2,
+                color: Colors.black.withOpacity(0.5),
+                blurRadius: 10,
+                spreadRadius: 3,
               ),
             ],
           ),
           child: const Icon(
             Icons.create,
             color: Colors.white,
-            size: 35,
+            size: 50,
           ),
         ),
       ),
     );
   }
-}
-
-// ========================================
-// ÇİZİM EKRANI
-// ========================================
-class DrawingScreen extends StatefulWidget {
-  final Uint8List screenshot;
-  final VoidCallback onClose;
-
-  const DrawingScreen({
-    super.key,
-    required this.screenshot,
-    required this.onClose,
-  });
-
-  @override
-  State<DrawingScreen> createState() => _DrawingScreenState();
-}
-
-class _DrawingScreenState extends State<DrawingScreen> {
-  final List<DrawingPoint> _points = [];
-  Color _selectedColor = Colors.red;
-  double _strokeWidth = 3.0;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Arka plan screenshot
-          Positioned.fill(
-            child: Image.memory(
-              widget.screenshot,
-              fit: BoxFit.contain,
-            ),
-          ),
-          
-          // Çizim alanı
-          Positioned.fill(
-            child: GestureDetector(
-              onPanStart: (details) {
-                setState(() {
-                  _points.add(
-                    DrawingPoint(
-                      details.localPosition,
-                      _selectedColor,
-                      _strokeWidth,
-                    ),
-                  );
-                });
-              },
-              onPanUpdate: (details) {
-                setState(() {
-                  _points.add(
-                    DrawingPoint(
-                      details.localPosition,
-                      _selectedColor,
-                      _strokeWidth,
-                    ),
-                  );
-                });
-              },
-              onPanEnd: (details) {
-                setState(() {
-                  _points.add(DrawingPoint.separator());
-                });
-              },
-              child: CustomPaint(
-                painter: DrawingPainter(_points),
-              ),
-            ),
-          ),
-          
-          // Üst toolbar
-          Positioned(
-            top: 40,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              color: Colors.black54,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // Kapat butonu
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                    onPressed: widget.onClose,
-                  ),
-                  
-                  // Renk seçimi
-                  ...[ Colors.red, Colors.blue, Colors.green, Colors.yellow, Colors.white ]
-                      .map((color) => GestureDetector(
-                        onTap: () => setState(() => _selectedColor = color),
-                        child: Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: _selectedColor == color ? Colors.white : Colors.transparent,
-                              width: 3,
-                            ),
-                          ),
-                        ),
-                      )),
-                  
-                  // Temizle
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.white, size: 30),
-                    onPressed: () => setState(() => _points.clear()),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ========================================
-// ÇİZİM NOKTALARI VE PAINTER
-// ========================================
-class DrawingPoint {
-  final Offset? offset;
-  final Color color;
-  final double strokeWidth;
-
-  DrawingPoint(this.offset, this.color, this.strokeWidth);
-  
-  DrawingPoint.separator()
-      : offset = null,
-        color = Colors.transparent,
-        strokeWidth = 0;
-}
-
-class DrawingPainter extends CustomPainter {
-  final List<DrawingPoint> points;
-
-  DrawingPainter(this.points);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    for (int i = 0; i < points.length - 1; i++) {
-      if (points[i].offset != null && points[i + 1].offset != null) {
-        canvas.drawLine(
-          points[i].offset!,
-          points[i + 1].offset!,
-          Paint()
-            ..color = points[i].color
-            ..strokeWidth = points[i].strokeWidth
-            ..strokeCap = StrokeCap.round,
-        );
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(DrawingPainter oldDelegate) => true;
 }
