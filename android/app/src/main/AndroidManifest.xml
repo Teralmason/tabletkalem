@@ -1,0 +1,48 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- İZİNLER -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"/>
+    
+    <application
+        android:label="TabletKalem"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher">
+        
+        <!-- ANA ACTIVITY -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <!-- OVERLAY SERVİSİ -->
+        <service
+            android:name="flutter.overlay.window.flutter_overlay_window.OverlayService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection"/>
+
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+
+    <!-- Android 13+ için bildirim izni -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    
+</manifest>
